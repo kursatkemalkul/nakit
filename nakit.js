@@ -32,7 +32,7 @@ const GROUPS=[
 
 /* Tek tip kalem: {id,t(gelir/gider),g(grup),n(ad),cur(E/T),a(tutar),months('all' | [aylar])} */
 const DEFAULTS={
- v:5, kur:54.95, birikim:31000,
+ v:6, kur:54.95, birikim:31000,
  items:[
   // --- Gelirler (tüm gelirler tek grupta) ---
   {id:"g1",t:"gelir",g:"Gelirler",n:"Eslemisko Maaşı",cur:"T",a:316000,months:"all"},
@@ -50,14 +50,14 @@ const DEFAULTS={
   {id:"h6",t:"gider",g:"Yaşadığımız Ev (İtalya)",n:"İtalyanca Dersi",cur:"T",a:4000,months:"all"},
   {id:"h7",t:"gider",g:"Yaşadığımız Ev (İtalya)",n:"Saç Kesimi",cur:"E",a:37,months:"all"},
   {id:"h8",t:"gider",g:"Yaşadığımız Ev (İtalya)",n:"İnternet (İtalya)",cur:"E",a:25,months:"all"},
-  // --- Diğer Evler (Türkiye): bu evlerin vergi/kredi giderleri ---
+  // --- Diğer Evler (Türkiye): önce Kürşat evi, sonra Eslem evleri ---
   {id:"k1",t:"gider",g:"Diğer Evler (Türkiye)",n:"Kürşat Evi — Konut Kredisi (kalan ₺42.000)",cur:"T",a:910,months:"all"},
   {id:"y5",t:"gider",g:"Diğer Evler (Türkiye)",n:"Kürşat Evi — Kira Gelir Vergisi (2 taksit)",cur:"T",a:38500,months:[5,7]},
+  {id:"y9",t:"gider",g:"Diğer Evler (Türkiye)",n:"Kürşat Evi — Emlak Vergisi (2 taksit)",cur:"T",a:3078,months:[5,11]},
+  {id:"y8",t:"gider",g:"Diğer Evler (Türkiye)",n:"Kürşat Evi — Yangın Vergisi (2 taksit)",cur:"T",a:3220,months:[5,11]},
+  {id:"y10",t:"gider",g:"Diğer Evler (Türkiye)",n:"Kürşat Evi — DASK",cur:"T",a:1611,months:[5]},
   {id:"y6",t:"gider",g:"Diğer Evler (Türkiye)",n:"Eslem Evleri — Emlak Vergisi (2 taksit)",cur:"T",a:19750,months:[5,11]},
   {id:"y7",t:"gider",g:"Diğer Evler (Türkiye)",n:"Eslem Evleri — DASK (2 ev)",cur:"T",a:3200,months:[5]},
-  {id:"y8",t:"gider",g:"Diğer Evler (Türkiye)",n:"Kürşat Evi — Yangın Vergisi (2 taksit)",cur:"T",a:3220,months:[5,11]},
-  {id:"y9",t:"gider",g:"Diğer Evler (Türkiye)",n:"Kürşat Evi — Emlak Vergisi (2 taksit)",cur:"T",a:3078,months:[5,11]},
-  {id:"y10",t:"gider",g:"Diğer Evler (Türkiye)",n:"Kürşat Evi — DASK",cur:"T",a:1611,months:[5]},
   {id:"y11",t:"gider",g:"Diğer Evler (Türkiye)",n:"Eslem Evleri — Yangın Vergisi",cur:"T",a:0,months:[5]},
   // --- Araç (arabayla ilgili her şey) ---
   {id:"a1",t:"gider",g:"Araç",n:"Benzin",cur:"E",a:300,months:"all"},
@@ -151,6 +151,26 @@ function remapV5(st){
   st.v=5;
   return st;
 }
+/* v5 → v6: "Diğer Evler" içinde önce Kürşat, sonra Eslem kalemleri (karışmasın) */
+function remapV6(st){
+  const items=st.items||[];
+  const isDE=i=>i.g==="Diğer Evler (Türkiye)";
+  const de=items.filter(isDE);
+  if(de.length>1){
+    const rank=it=>{const n=(it.n||"").toLowerCase();
+      if(/kürşat|kursat|kemal/.test(n))return 0;
+      if(/eslem/.test(n))return 1; return 2;};
+    const sorted=[...de].sort((a,b)=>rank(a)-rank(b)); // stabil: aynı sahibin sırası korunur
+    const out=[]; let placed=false;
+    for(const it of items){
+      if(isDE(it)){ if(!placed){ out.push(...sorted); placed=true; } }
+      else out.push(it);
+    }
+    st.items=out;
+  }
+  st.v=6;
+  return st;
+}
 function load(){
   let raw=null;
   try{raw=localStorage.getItem("nakit2026");}catch(e){}
@@ -162,10 +182,11 @@ function load(){
         if(S.v<3){remapGroups(S); changed=true;}
         if(S.v<4){remapV4(S); changed=true;}
         if(S.v<5){remapV5(S); changed=true;}
+        if(S.v<6){remapV6(S); changed=true;}
         if(changed)save();
         return;
       }
-      S=remapV5(remapV4(remapGroups(migrate(d)))); save(); return;
+      S=remapV6(remapV5(remapV4(remapGroups(migrate(d))))); save(); return;
     }catch(e){}
   }
   S=JSON.parse(JSON.stringify(DEFAULTS));
