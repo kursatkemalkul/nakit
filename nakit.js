@@ -171,6 +171,15 @@ function remapV6(st){
   st.v=6;
   return st;
 }
+/* gelen veriyi (yerel ya da bulut) güncel sürüme taşı */
+function migrateUp(st){
+  if(!st||!Array.isArray(st.items))return st;
+  if((st.v||0)<3)remapGroups(st);
+  if((st.v||0)<4)remapV4(st);
+  if((st.v||0)<5)remapV5(st);
+  if((st.v||0)<6)remapV6(st);
+  return st;
+}
 function load(){
   let raw=null;
   try{raw=localStorage.getItem("nakit2026");}catch(e){}
@@ -581,10 +590,13 @@ function cloudApply(r){
   try{
     const d=JSON.parse(r.data);
     if(!d||!Array.isArray(d.items))return;
+    const oldV=d.v||0;
+    migrateUp(d);                       // bulut verisini de güncel sürüme taşı (sıralama/gruplar)
     cloud.applying=true; S=d;
-    try{localStorage.setItem("nakit2026",r.data);}catch(e){}
+    try{localStorage.setItem("nakit2026",JSON.stringify(S));}catch(e){}
     rerender(); cloud.applying=false;
     cloudStatus("☁ eşitlendi",true);
+    if(oldV<6)cloudPush();              // bulut eski sürümdeyse güncellenmiş hali geri yaz
   }catch(e){}
 }
 function startSync(){
