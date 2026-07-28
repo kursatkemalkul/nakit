@@ -43,6 +43,7 @@ h1{font-size:17px;font-weight:600;letter-spacing:2.5px}
 .mcard.open .mname{color:#fff!important}
 .mkalan{font-size:22px;font-weight:300;font-variant-numeric:tabular-nums;color:#fff!important;letter-spacing:-.5px}
 .mbirik{font-size:10px;color:var(--mut);text-align:right;font-variant-numeric:tabular-nums;letter-spacing:.4px}
+.mbirik.pos{color:var(--in)} .mbirik.neg{color:var(--out)}
 .chev{display:none}
 .mbody{display:none;padding:0 0 20px}
 .mcard.open .mbody{display:block}

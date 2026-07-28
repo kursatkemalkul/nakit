@@ -250,16 +250,16 @@ function renderCalendar(){
 
   const expGroups=groupList().filter(g=>g.t!=="gelir");
   const grpOpts=groupList().map(g=>`<option value="${escapeHtml(g.key)}"${g.key==="Ekstralar"?" selected":""}>${escapeHtml(g.key)}</option>`).join("");
-  let cum=S.birikim, html="";
+  let html="";
   res.forEach((r,idx)=>{
-    const m=idx+1; cum+=r.k;
+    const m=idx+1;
     const col=COL[idx], open=openMonths.has(m)?" open":"";
     html+=`<div class="mcard${open}" data-m="${m}">
     <div class="mhead" data-mh="${m}">
       <div class="mbar" style="background:${col}"></div>
       <div class="mname">${MN[idx]}</div>
       <div><div class="mkalan">${fE(r.k)}</div>
-      <div class="mbirik">birikim ${fE(cum)}</div></div>
+      <div class="mbirik ${r.k>=0?"pos":"neg"}">bu ay ${r.k>=0?"+":"−"}${fE(Math.abs(r.k))}</div></div>
       <div class="chev">▶</div>
     </div>
     <div class="mbody">
@@ -292,7 +292,6 @@ function renderCalendar(){
     </div>
     <div class="kalanrow"><span class="l">KALAN</span><span class="v">${fE(r.k)}</span></div>
     <div class="tlrow"><span>≈ TL karşılığı</span><span>${fT(r.k*S.kur)}</span></div>
-    <div class="birrow"><span>TOPLAM BİRİKİM</span><span>${fE(cum)}</span></div>
     </div></div>`;
   });
   document.getElementById("months").innerHTML=html;
@@ -301,8 +300,7 @@ function renderCalendar(){
   document.getElementById("yearbox").innerHTML=`<h2>YIL ÖZETİ</h2>
    <div class="it"><span class="nm">Yıllık Gelir</span><span class="vl" style="color:var(--in)">${fE(yI)}</span></div>
    <div class="it"><span class="nm">Yıllık Gider</span><span class="vl" style="color:var(--out)">${fE(yO)}</span></div>
-   <div class="it"><span class="nm">Yıllık Birikim</span><span class="vl">${fE(yI-yO)}</span></div>
-   <div class="it"><span class="nm" style="color:var(--gold)">Yıl Sonu Toplam Birikim</span><span class="vl" style="color:var(--gold)">${fE(S.birikim+yI-yO)}</span></div>`;
+   <div class="it"><span class="nm">Yıllık Birikim (plan)</span><span class="vl">${fE(yI-yO)}</span></div>`;
   bindCalendar();
 }
 function bindCalendar(){
@@ -541,8 +539,7 @@ function renderEditor(){
   document.getElementById("esum").innerHTML=`<h2>YIL ÖZETİ</h2>
    <div class="it"><span class="nm">Yıllık Gelir</span><span class="vl" style="color:var(--in)">${fE(totIn)}</span></div>
    <div class="it"><span class="nm">Yıllık Gider</span><span class="vl" style="color:var(--out)">${fE(totOut)}</span></div>
-   <div class="it"><span class="nm">Yıllık Birikim</span><span class="vl">${fE(net)}</span></div>
-   <div class="it"><span class="nm" style="color:var(--gold)">Yıl Sonu Toplam Birikim</span><span class="vl" style="color:var(--gold)">${fE(S.birikim+net)}</span></div>`;
+   <div class="it"><span class="nm">Yıllık Birikim (plan)</span><span class="vl">${fE(net)}</span></div>`;
   bindEditor();
 }
 function bindEditor(){
