@@ -725,10 +725,15 @@ function setupDrag(){
 }
 
 /* ---- ortak: kur / birikim ayar alanı + otomatik kur ---- */
+function birTlGoster(){
+  const bt=document.getElementById("birTl");
+  if(bt)bt.textContent="≈ "+fT(S.birikim*S.kur);
+}
 function wireSettings(reRender){
   const kr=document.getElementById("kurRef"); if(kr)kr.onclick=fetchKur;
   const ki=document.getElementById("kurIn"); if(ki)ki.onchange=e=>{S.kur=parseFloat(e.target.value)||S.kur; save(); reRender();};
   const bi=document.getElementById("birIn"); if(bi)bi.onchange=e=>{S.birikim=parseFloat(e.target.value)||0; save(); reRender();};
+  birTlGoster();
 }
 async function fetchKur(){
   const srcEl=document.getElementById("kurSrc");
