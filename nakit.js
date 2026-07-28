@@ -382,6 +382,10 @@ function renderEditor(){
     html+=`<div class="grp">
       <div class="grphead"><span class="grpname" style="color:${base}">${escapeHtml(g.key)}</span>
       <span class="grptot" style="color:${base}">${fE(totVal)}<small> /yıl</small></span></div>`;
+    if(g.t==="gelir"){
+      const mIn=items.filter(i=>i.months==="all").reduce((s,i)=>s+eur(i),0);
+      html+=`<div class="grpsub" style="color:${base}"><span>Aylık gelir (her ay)</span><span>${fE(mIn)} · ${fT(mIn*S.kur)}</span></div>`;
+    }
     if(g.t!=="gelir"&&outSum>0)html+=`<div class="grpbar"><div style="width:${share}%;background:${base}"></div></div>`;
     html+=`<div class="glist" data-group="${escapeHtml(g.key)}">`;
     items.forEach(it=>{

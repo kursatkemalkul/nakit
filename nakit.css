@@ -90,6 +90,9 @@ h1{font-size:17px;font-weight:600;letter-spacing:2.5px}
 .grpname{font-size:14px;font-weight:700;letter-spacing:.4px}
 .grptot{font-size:15px;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:-.2px}
 .grptot small{font-size:10px;letter-spacing:.3px;font-weight:400;opacity:.7}
+.grpsub{display:flex;justify-content:space-between;align-items:baseline;font-size:11px;padding:1px 0 6px;
+  opacity:.8;font-variant-numeric:tabular-nums;letter-spacing:.3px}
+.grpsub span:first-child{font-weight:600;opacity:.85}
 .grpbar{height:3px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden;margin:0 0 3px}
 .grpbar div{height:100%;border-radius:2px}
 .ewrap{padding:5px 0;border-bottom:1px solid rgba(255,255,255,.05);background:#000}
