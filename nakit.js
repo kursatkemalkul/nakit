@@ -243,6 +243,7 @@ function valHTML(it){
 function renderCalendar(){
   const ki=document.getElementById("kurIn"); if(ki)ki.value=S.kur;
   const bi=document.getElementById("birIn"); if(bi)bi.value=S.birikim;
+  const bti=document.getElementById("birTlIn"); if(bti)bti.value=S.birikimTL||0;
   const res=MN.map((_,i)=>monthCalc(i+1));
   const maxK=Math.max(...res.map(r=>r.k),1);
   document.getElementById("strip").innerHTML=res.map((r,i)=>
@@ -502,6 +503,7 @@ function monthPickerHTML(it){
 function renderEditor(){
   const ki=document.getElementById("kurIn"); if(ki)ki.value=S.kur;
   const bi=document.getElementById("birIn"); if(bi)bi.value=S.birikim;
+  const bti=document.getElementById("birTlIn"); if(bti)bti.value=S.birikimTL||0;
 
   let totIn=0,totOut=0;
   S.items.forEach(it=>{const an=annual(it); if(it.t==="gelir")totIn+=an; else totOut+=an;});
@@ -745,13 +747,14 @@ function setupDrag(){
 
 /* ---- ortak: kur / birikim ayar alanı + otomatik kur ---- */
 function birTlGoster(){
-  const bt=document.getElementById("birTl");
-  if(bt)bt.textContent="≈ "+fT(S.birikim*S.kur);
+  const bt=document.getElementById("birTop");
+  if(bt)bt.textContent="toplam ≈ "+fE(S.birikim+(S.birikimTL||0)/S.kur)+" · "+fT(S.birikim*S.kur+(S.birikimTL||0));
 }
 function wireSettings(reRender){
   const kr=document.getElementById("kurRef"); if(kr)kr.onclick=fetchKur;
   const ki=document.getElementById("kurIn"); if(ki)ki.onchange=e=>{S.kur=parseFloat(e.target.value)||S.kur; save(); reRender();};
   const bi=document.getElementById("birIn"); if(bi)bi.onchange=e=>{S.birikim=parseFloat(e.target.value)||0; save(); reRender();};
+  const bti=document.getElementById("birTlIn"); if(bti)bti.onchange=e=>{S.birikimTL=parseFloat(e.target.value)||0; save(); reRender();};
   birTlGoster();
 }
 async function fetchKur(){

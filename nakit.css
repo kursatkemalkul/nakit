@@ -29,7 +29,10 @@ h1{font-size:17px;font-weight:600;letter-spacing:2.5px}
 .panel input:focus{outline:none;border-bottom-color:#fff}
 .kurwrap{display:flex;gap:6px;align-items:center}
 #kurSrc{display:block;font-size:10px;color:#8A94AC}
-#birTl{flex:1;text-align:center;font-size:13px;color:#8A94AC;font-variant-numeric:tabular-nums;letter-spacing:.3px}
+#birTop{display:block;font-size:10px;color:#8A94AC;font-variant-numeric:tabular-nums;letter-spacing:.2px;white-space:nowrap}
+.birwrap{display:flex;align-items:baseline;gap:5px}
+.birwrap .cur{color:var(--mut);font-size:12px;flex:none}
+.birwrap input{width:96px!important}
 #kurRef{padding:8px 10px}
 
 /* ---- aylık takvim (sayfa 1) ---- */
