@@ -354,6 +354,33 @@ function monthsLabel(it){
   if(arr.length>4)return arr.length+" ay";
   return arr.map(m=>MS[m-1]).join(" · ");
 }
+function monthsLabelFull(it){
+  if(it.months==="all")return "Her ay";
+  const arr=[...it.months].sort((a,b)=>a-b);
+  if(!arr.length)return "Ay seçilmedi";
+  if(arr.length===12)return "Her ay";
+  return arr.map(m=>MT[m-1]).join(" · ");
+}
+
+/* kesilen yazılar: üzerine gelince (fare) ya da dokununca (odak) tam metni balonda göster */
+let tipEl=null,tipHideT=null;
+function tipShow(target,text){
+  if(!text)return;
+  if(!tipEl){tipEl=document.createElement("div");tipEl.id="tip";document.body.appendChild(tipEl);}
+  clearTimeout(tipHideT);
+  tipEl.textContent=text; tipEl.classList.add("show");
+  const r=target.getBoundingClientRect();
+  let x=r.left+r.width/2-tipEl.offsetWidth/2;
+  x=Math.max(8,Math.min(x,window.innerWidth-tipEl.offsetWidth-8));
+  let y=r.top-tipEl.offsetHeight-8;
+  if(y<8)y=r.bottom+8;
+  tipEl.style.left=x+"px"; tipEl.style.top=y+"px";
+}
+function tipHide(delay){clearTimeout(tipHideT);
+  tipHideT=setTimeout(()=>{if(tipEl)tipEl.classList.remove("show");},delay||0);}
+window.addEventListener("scroll",()=>tipHide(0),{passive:true});
+document.addEventListener("pointerdown",e=>{if(!e.target.closest(".enm"))tipHide(0);},true);
+
 function monthPickerHTML(it){
   const all=it.months==="all";
   let h=`<div class="mpick"><button class="mall${all?" on":""}" data-mall="${it.id}">Her ay</button><div class="mgrid">`;
@@ -426,8 +453,18 @@ function renderEditor(){
   bindEditor();
 }
 function bindEditor(){
-  document.querySelectorAll(".enm").forEach(inp=>inp.onchange=()=>{
-    const it=findItem(inp.dataset.id); if(it){it.n=inp.value.trim()||it.n; save();}
+  tipHide(0);
+  document.querySelectorAll(".enm").forEach(inp=>{
+    inp.onchange=()=>{
+      const it=findItem(inp.dataset.id); if(it){it.n=inp.value.trim()||it.n; save();}
+    };
+    // ad kesikse tam halini balonda göster (fareyle üzerine gelince ya da dokunup odaklanınca)
+    const trunc=()=>inp.scrollWidth>inp.clientWidth+1;
+    inp.addEventListener("mouseenter",()=>{if(trunc())tipShow(inp,inp.value);});
+    inp.addEventListener("mouseleave",()=>{if(document.activeElement!==inp)tipHide(80);});
+    inp.addEventListener("focus",()=>{if(trunc())tipShow(inp,inp.value);});
+    inp.addEventListener("input",()=>{if(tipEl&&tipEl.classList.contains("show"))tipShow(inp,inp.value);});
+    inp.addEventListener("blur",()=>tipHide(0));
   });
   document.querySelectorAll(".vnum.ed").forEach(sp=>sp.onclick=()=>{
     const it=findItem(sp.dataset.ed); if(!it)return;
@@ -447,8 +484,15 @@ function bindEditor(){
     else it.a=Math.round((it.cur==="E"?it.a*S.kur:it.a)*100)/100;
     it.cur=to; save(); renderEditor(); toast(to==="E"?"€ ile ödeniyor ✓":"₺ ile ödeniyor ✓");
   });
-  document.querySelectorAll("[data-mp]").forEach(b=>b.onclick=()=>{
-    openPicker=openPicker===b.dataset.mp?null:b.dataset.mp; renderEditor();
+  document.querySelectorAll("[data-mp]").forEach(b=>{
+    b.onclick=()=>{
+      openPicker=openPicker===b.dataset.mp?null:b.dataset.mp; renderEditor();
+    };
+    // "May · T…" gibi kesik ay etiketinin tam halini balonda göster
+    b.addEventListener("mouseenter",()=>{
+      const it=findItem(b.dataset.mp); if(it)tipShow(b,monthsLabelFull(it));
+    });
+    b.addEventListener("mouseleave",()=>tipHide(80));
   });
   document.querySelectorAll("[data-mall]").forEach(b=>b.onclick=()=>{
     const it=findItem(b.dataset.mall); if(it){it.months="all"; save(); renderEditor();}
