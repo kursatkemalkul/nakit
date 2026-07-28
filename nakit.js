@@ -32,7 +32,7 @@ const GROUPS=[
 
 /* Tek tip kalem: {id,t(gelir/gider),g(grup),n(ad),cur(E/T),a(tutar),months('all' | [aylar])} */
 const DEFAULTS={
- v:6, kur:54.95, birikim:31000,
+ v:7, kur:54.95, birikim:31000,
  items:[
   // --- Gelirler (tüm gelirler tek grupta) ---
   {id:"g1",t:"gelir",g:"Gelirler",n:"Eslemisko Maaşı",cur:"T",a:316000,months:"all"},
@@ -52,7 +52,8 @@ const DEFAULTS={
   {id:"h8",t:"gider",g:"Yaşadığımız Ev (İtalya)",n:"İnternet (İtalya)",cur:"E",a:25,months:"all"},
   // --- Diğer Evler (Türkiye): önce Kürşat evi, sonra Eslem evleri ---
   {id:"k1",t:"gider",g:"Diğer Evler (Türkiye)",n:"Kürşat Evi — Konut Kredisi (kalan ₺42.000)",cur:"T",a:910,months:"all"},
-  {id:"y5",t:"gider",g:"Diğer Evler (Türkiye)",n:"Kürşat Evi — Kira Gelir Vergisi (2 taksit)",cur:"T",a:38500,months:[5,7]},
+  {id:"y5",t:"gider",g:"Diğer Evler (Türkiye)",n:"Kürşat Evi — Kira Gelir Vergisi (2 taksit)",cur:"T",a:38500,months:[5,7],
+   calc:{src:"g4",auto:false,ist:true,istT:58000,gg:15,d:[190000,400000,1000000,5300000],yil:2026}},
   {id:"y9",t:"gider",g:"Diğer Evler (Türkiye)",n:"Kürşat Evi — Emlak Vergisi (2 taksit)",cur:"T",a:3078,months:[5,11]},
   {id:"y8",t:"gider",g:"Diğer Evler (Türkiye)",n:"Kürşat Evi — Yangın Vergisi (2 taksit)",cur:"T",a:3220,months:[5,11]},
   {id:"y10",t:"gider",g:"Diğer Evler (Türkiye)",n:"Kürşat Evi — DASK",cur:"T",a:1611,months:[5]},
@@ -85,7 +86,7 @@ const DEFAULTS={
 
 let S=null, editMode=false;
 const openMonths=new Set(), openCats=new Set();
-let openPicker=null;
+let openPicker=null, openVergi=null, openVergiDet=false;
 
 /* ---- para birimi / biçim ---- */
 const fE=v=>"€"+Math.round(v).toLocaleString("tr-TR");
@@ -171,6 +172,18 @@ function remapV6(st){
   st.v=6;
   return st;
 }
+/* v6 → v7: "Kira Gelir Vergisi" kalemine hesap makinesi tanımı ekle (kira kalemine bağlı) */
+function remapV7(st){
+  (st.items||[]).forEach(it=>{
+    if(it.t==="gider"&&!it.calc&&/kira gelir vergisi/i.test(it.n||"")){
+      const src=(st.items||[]).find(x=>x.t==="gelir"&&/k[üu]r[şs]at/i.test(x.n||"")&&/kira/i.test(x.n||""))
+             ||(st.items||[]).find(x=>x.t==="gelir"&&/kira/i.test(x.n||""));
+      it.calc={src:src?src.id:null,auto:false,ist:true,istT:58000,gg:15,d:[190000,400000,1000000,5300000],yil:2026};
+    }
+  });
+  st.v=7;
+  return st;
+}
 /* gelen veriyi (yerel ya da bulut) güncel sürüme taşı */
 function migrateUp(st){
   if(!st||!Array.isArray(st.items))return st;
@@ -178,6 +191,7 @@ function migrateUp(st){
   if((st.v||0)<4)remapV4(st);
   if((st.v||0)<5)remapV5(st);
   if((st.v||0)<6)remapV6(st);
+  if((st.v||0)<7)remapV7(st);
   return st;
 }
 function load(){
@@ -188,14 +202,11 @@ function load(){
       const d=JSON.parse(raw);
       if(d&&d.v>=2&&Array.isArray(d.items)){
         S=d; let changed=false;
-        if(S.v<3){remapGroups(S); changed=true;}
-        if(S.v<4){remapV4(S); changed=true;}
-        if(S.v<5){remapV5(S); changed=true;}
-        if(S.v<6){remapV6(S); changed=true;}
+        if(S.v<7){migrateUp(S); changed=true;}
         if(changed)save();
         return;
       }
-      S=remapV6(remapV5(remapV4(remapGroups(migrate(d))))); save(); return;
+      S=migrateUp(migrate(d)); save(); return;
     }catch(e){}
   }
   S=JSON.parse(JSON.stringify(DEFAULTS));
@@ -306,7 +317,7 @@ function bindCalendar(){
     const k=el.dataset.cat; openCats.has(k)?openCats.delete(k):openCats.add(k); el.classList.toggle("open");
   });
   document.querySelectorAll(".editv").forEach(inp=>inp.onchange=()=>{
-    const it=findItem(inp.dataset.id); if(it){it.a=parseFloat(inp.value)||0; save(); renderCalendar();}
+    const it=findItem(inp.dataset.id); if(it){it.a=parseFloat(inp.value)||0; vergiAuto(it.id); save(); renderCalendar();}
   });
   document.querySelectorAll(".vl.tap").forEach(sp=>sp.onclick=e=>{
     e.stopPropagation();
@@ -315,7 +326,7 @@ function bindCalendar(){
     inp.className="editv"; inp.type="number"; inp.value=it.a; inp.inputMode="decimal";
     sp.replaceWith(inp); inp.focus();
     let done=false;
-    inp.onchange=()=>{done=true; it.a=parseFloat(inp.value)||0; save(); renderCalendar();
+    inp.onchange=()=>{done=true; it.a=parseFloat(inp.value)||0; vergiAuto(it.id); save(); renderCalendar();
       toast(it.months==="all"?"Tüm aylara uygulandı ✓":"Kaydedildi ✓");};
     inp.onblur=()=>{if(!done)renderCalendar();};
   });
@@ -354,6 +365,86 @@ function monthsLabel(it){
   if(arr.length>4)return arr.length+" ay";
   return arr.map(m=>MS[m-1]).join(" · ");
 }
+/* ---- kira gelir vergisi hesabı (GVK 103 — artan oranlı tarife) ----
+   Formül sabit: kira − mesken istisnası − %15 götürü gider = matrah → dilimlere göre vergi.
+   İstisna tutarı ve dilim sınırları her yıl GİB tarafından yenilenir (calc parametreleri elle güncellenir). */
+const VDIL_ORAN=[.15,.20,.27,.35,.40];
+function srcYearlyTL(it){return (it.cur==="T"?it.a:it.a*S.kur)*monthCount(it);}
+function vergiKirasi(t){const c=t.calc||{};const s=c.src?findItem(c.src):null;
+  return Math.round(s?srcYearlyTL(s):(c.kira||0));}
+function kiraVergiHesap(kira,c){
+  const ist=c.ist?Math.min(c.istT||0,kira):0;
+  const kalan=Math.max(0,kira-ist);
+  const gg=Math.round(kalan*((c.gg||0)/100));
+  const matrah=kalan-gg;
+  const lims=[...(c.d||[])].concat([Infinity]);
+  let prev=0,toplam=0; const dil=[];
+  for(let i=0;i<lims.length&&i<VDIL_ORAN.length;i++){
+    if(matrah<=prev)break;
+    const pay=Math.min(matrah,lims[i])-prev;
+    const v=pay*VDIL_ORAN[i];
+    dil.push({oran:VDIL_ORAN[i],pay,v});
+    toplam+=v; prev=lims[i];
+  }
+  return {kira,ist,gg,matrah,dil,toplam:Math.round(toplam)};
+}
+function vergiUygula(t){
+  const r=kiraVergiHesap(vergiKirasi(t),t.calc);
+  const ins=Math.max(1,monthCount(t));
+  t.a=Math.round(r.toplam/ins); t.cur="T";
+  return {r,ins};
+}
+/* bir kalemin tutarı değişince: ona bağlı otomatik vergi kalemlerini yeniden hesapla */
+function vergiAuto(changedId){
+  let msg=null;
+  S.items.forEach(t=>{
+    if(t.calc&&t.calc.auto&&t.calc.src===changedId){
+      const {ins}=vergiUygula(t);
+      msg="Kira vergisi yeniden hesaplandı: "+ins+" × "+fT(t.a);
+    }
+  });
+  if(msg)toast(msg);
+}
+function vergiPanelHTML(it){
+  const c=it.calc;
+  const src=c.src?findItem(c.src):null;
+  const kira=vergiKirasi(it);
+  const r=kiraVergiHesap(kira,c);
+  const ins=Math.max(1,monthCount(it));
+  const tak=Math.round(r.toplam/ins);
+  let h=`<div class="vpanel">
+    <div class="vphead">KİRA GELİR VERGİSİ HESABI · ${c.yil} TARİFESİ</div>
+    <div class="vk"><label>Yıllık kira (₺)${src?` — “${escapeHtml(src.n)}” kalemine bağlı`:""}</label>
+      <input type="number" data-vk="${it.id}" value="${kira}"></div>
+    <label class="vchk"><input type="checkbox" data-vist="${it.id}"${c.ist?" checked":""}>
+      Mesken istisnası (−${(c.istT||0).toLocaleString("tr-TR")} ₺)</label>
+    ${c.ist?`<div class="vpnote">Türkiye'de beyana tabi toplam gelir 1.500.000 ₺'yi aşarsa istisna kullanılamaz — o durumda kapat.</div>`:""}
+    <div class="vrow"><span>Kira (yıllık)</span><span>${fT(r.kira)}</span></div>`;
+  if(r.ist>0)h+=`<div class="vrow"><span>− Mesken istisnası</span><span>−${fT(r.ist)}</span></div>`;
+  h+=`<div class="vrow"><span>− Götürü gider (%${c.gg})</span><span>−${fT(r.gg)}</span></div>
+    <div class="vrow top"><span>Vergi matrahı</span><span>${fT(r.matrah)}</span></div>`;
+  r.dil.forEach(d=>{h+=`<div class="vrow dim"><span>%${Math.round(d.oran*100)} × ${fT(d.pay)}</span><span>${fT(d.v)}</span></div>`;});
+  h+=`<div class="vrow top"><span>TOPLAM VERGİ</span><span>${fT(r.toplam)}</span></div>
+    <div class="vrow dim"><span>${ins} taksit (${monthsLabel(it)}) · resmî ödeme Mart + Temmuz</span><span>${ins} × ${fT(tak)}</span></div>
+    <button class="vapply" data-vapply="${it.id}">Kaleme yaz: ${ins} × ${fT(tak)}</button>
+    <label class="vchk"><input type="checkbox" data-vauto="${it.id}"${c.auto?" checked":""}>
+      Kira kalemi değişince otomatik yeniden hesapla</label>
+    <details class="vpdet"${openVergiDet?" open":""}><summary>${c.yil} parametreleri (her yıl değişir)</summary>
+      <div class="vprm"><label>Mesken istisnası (₺)</label><input type="number" data-vp="istT" data-vid="${it.id}" value="${c.istT}"></div>
+      <div class="vprm"><label>Götürü gider (%)</label><input type="number" data-vp="gg" data-vid="${it.id}" value="${c.gg}"></div>
+      <div class="vprm"><label>1. dilim üstü (%15)</label><input type="number" data-vp="d0" data-vid="${it.id}" value="${c.d[0]}"></div>
+      <div class="vprm"><label>2. dilim üstü (%20)</label><input type="number" data-vp="d1" data-vid="${it.id}" value="${c.d[1]}"></div>
+      <div class="vprm"><label>3. dilim üstü (%27)</label><input type="number" data-vp="d2" data-vid="${it.id}" value="${c.d[2]}"></div>
+      <div class="vprm"><label>4. dilim üstü (%35)</label><input type="number" data-vp="d3" data-vid="${it.id}" value="${c.d[3]}"></div>
+      <div class="vprm"><label>Tarife yılı</label><input type="number" data-vp="yil" data-vid="${it.id}" value="${c.yil}"></div>
+      <div class="vpnote">4. dilimin üzeri %40. Bu tutarları GİB her yıl Aralık'ta yeniler
+        (<a href="https://www.gib.gov.tr" target="_blank" rel="noopener">gib.gov.tr</a>) — uygulama bunları
+        kendiliğinden çekemez; yeni yılda buradan elle düzelt ya da Claude'a sor.</div>
+    </details>
+  </div>`;
+  return h;
+}
+
 function monthsLabelFull(it){
   if(it.months==="all")return "Her ay";
   const arr=[...it.months].sort((a,b)=>a-b);
@@ -426,16 +517,20 @@ function renderEditor(){
       const eurCell=it.cur==="E"
         ? `<span class="vnum ed" data-ed="${it.id}" style="color:${base}">${eurNum.toLocaleString("tr-TR")}</span>`
         : `<span class="vnum sw" data-sw="${it.id}" data-to="E">${eurNum.toLocaleString("tr-TR")}</span>`;
+      const vopen=openVergi===it.id;
+      const fx=it.calc?`<button class="efx${vopen?" on":""}" data-fx="${it.id}" title="Vergi hesabı">ƒ</button>`:"";
       html+=`<div class="ewrap" data-id="${it.id}">
         <div class="erow">
           <span class="dh" data-dh="${it.id}" title="Sürükle">⠿</span>
           <input class="enm" value="${escapeHtml(it.n)}" data-id="${it.id}" style="color:${cTxt}">
+          ${fx}
           <div class="val tl ${it.cur==='T'?'paid':'calc'}">${tlCell}</div>
           <div class="val eur ${it.cur==='E'?'paid':'calc'}">${eurCell}</div>
           <button class="emonths${open}" data-mp="${it.id}">${monthsLabel(it)}</button>
           <button class="edel" data-del="${it.id}">✕</button>
         </div>
         ${open?monthPickerHTML(it):""}
+        ${vopen?vergiPanelHTML(it):""}
       </div>`;
     });
     html+=`</div>`;
@@ -472,7 +567,7 @@ function bindEditor(){
     inp.type="number"; inp.inputMode="decimal"; inp.value=it.a; inp.className="vedit";
     sp.replaceWith(inp); inp.focus(); inp.select();
     let done=false;
-    inp.onchange=()=>{done=true; it.a=parseFloat(inp.value)||0; save(); renderEditor();
+    inp.onchange=()=>{done=true; it.a=parseFloat(inp.value)||0; vergiAuto(it.id); save(); renderEditor();
       toast(it.months==="all"?"Tüm aylara uygulandı ✓":"Kaydedildi ✓");};
     inp.onblur=()=>{if(!done)renderEditor();};
   });
@@ -484,6 +579,49 @@ function bindEditor(){
     else it.a=Math.round((it.cur==="E"?it.a*S.kur:it.a)*100)/100;
     it.cur=to; save(); renderEditor(); toast(to==="E"?"€ ile ödeniyor ✓":"₺ ile ödeniyor ✓");
   });
+  /* --- vergi hesap paneli --- */
+  document.querySelectorAll("[data-fx]").forEach(b=>b.onclick=()=>{
+    openVergi=openVergi===b.dataset.fx?null:b.dataset.fx; openPicker=null; renderEditor();
+  });
+  document.querySelectorAll("[data-vk]").forEach(inp=>inp.onchange=()=>{
+    const it=findItem(inp.dataset.vk); if(!it||!it.calc)return;
+    const val=parseFloat(inp.value)||0;
+    const src=it.calc.src?findItem(it.calc.src):null;
+    if(src){ // panelde yazılan yıllık kira, bağlı gelir kalemine de işler (çift yönlü)
+      const mc=Math.max(1,monthCount(src));
+      if(src.cur==="T")src.a=Math.round(val/mc);
+      else src.a=Math.round(val/S.kur/mc*100)/100;
+    } else it.calc.kira=val;
+    if(it.calc.auto)vergiUygula(it);
+    save(); renderEditor();
+  });
+  document.querySelectorAll("[data-vist]").forEach(cb=>cb.onchange=()=>{
+    const it=findItem(cb.dataset.vist); if(!it||!it.calc)return;
+    it.calc.ist=cb.checked; if(it.calc.auto)vergiUygula(it);
+    save(); renderEditor();
+  });
+  document.querySelectorAll("[data-vauto]").forEach(cb=>cb.onchange=()=>{
+    const it=findItem(cb.dataset.vauto); if(!it||!it.calc)return;
+    it.calc.auto=cb.checked; if(cb.checked)vergiUygula(it);
+    save(); renderEditor();
+  });
+  document.querySelectorAll("[data-vapply]").forEach(b=>b.onclick=()=>{
+    const it=findItem(b.dataset.vapply); if(!it||!it.calc)return;
+    const {ins}=vergiUygula(it); it.calc.auto=true;
+    save(); renderEditor(); toast("Kaleme yazıldı: "+ins+" × "+fT(it.a));
+  });
+  document.querySelectorAll("[data-vp]").forEach(inp=>inp.onchange=()=>{
+    const it=findItem(inp.dataset.vid); if(!it||!it.calc)return;
+    const val=parseFloat(inp.value)||0, k=inp.dataset.vp;
+    if(k==="istT")it.calc.istT=val;
+    else if(k==="gg")it.calc.gg=val;
+    else if(k==="yil")it.calc.yil=Math.round(val);
+    else if(/^d[0-3]$/.test(k))it.calc.d[+k[1]]=val;
+    if(it.calc.auto)vergiUygula(it);
+    save(); renderEditor();
+  });
+  document.querySelectorAll(".vpdet").forEach(d=>d.ontoggle=()=>{openVergiDet=d.open;});
+
   document.querySelectorAll("[data-mp]").forEach(b=>{
     b.onclick=()=>{
       openPicker=openPicker===b.dataset.mp?null:b.dataset.mp; renderEditor();
@@ -645,7 +783,7 @@ function cloudApply(r){
     try{localStorage.setItem("nakit2026",JSON.stringify(S));}catch(e){}
     rerender(); cloud.applying=false;
     cloudStatus("☁ eşitlendi",true);
-    if(oldV<6)cloudPush();              // bulut eski sürümdeyse güncellenmiş hali geri yaz
+    if(oldV<7)cloudPush();              // bulut eski sürümdeyse güncellenmiş hali geri yaz
     histReset();                        // dıştan gelen veri geri-al geçmişini sıfırlar
   }catch(e){}
 }

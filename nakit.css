@@ -136,6 +136,35 @@ h1{font-size:17px;font-weight:600;letter-spacing:2.5px}
 .addrow{width:100%;background:none;border:none;color:var(--mut);padding:7px 0;font-size:11px;letter-spacing:.8px;
   cursor:pointer;text-align:left;font-family:inherit;text-decoration:underline;text-underline-offset:3px;opacity:.7}
 
+/* ---- kira gelir vergisi hesap paneli ---- */
+.efx{flex:none;width:20px;height:20px;background:none;border:1px solid rgba(216,178,92,.4);color:var(--gold);
+  font-size:12px;font-style:italic;cursor:pointer;font-family:inherit;padding:0;line-height:1;border-radius:50%}
+.efx.on{background:var(--gold);color:#000;border-color:var(--gold)}
+.vpanel{margin:8px 0 10px;padding:12px 14px;border:1px solid rgba(216,178,92,.28);background:rgba(216,178,92,.05)}
+.vphead{font-size:10px;letter-spacing:1.5px;font-weight:600;color:var(--gold);margin-bottom:10px}
+.vk{padding:2px 0 8px}
+.vk label{display:block;font-size:11px;color:var(--mut);margin-bottom:2px;line-height:1.5}
+.vk input{width:100%;background:none;border:none;border-bottom:1px solid var(--line);color:#fff;
+  text-align:left;font-size:17px;font-family:inherit;font-variant-numeric:tabular-nums;padding:4px 0}
+.vk input:focus{outline:none;border-bottom-color:var(--gold)}
+.vchk{display:flex;align-items:center;gap:8px;font-size:12px;color:#cfd6e4;padding:5px 0;cursor:pointer}
+.vchk input{accent-color:var(--gold);width:15px;height:15px;flex:none}
+.vrow{display:flex;justify-content:space-between;gap:10px;font-size:12px;padding:3px 0;
+  font-variant-numeric:tabular-nums;color:#cfd6e4}
+.vrow.dim{color:var(--mut);font-size:11px}
+.vrow.top{border-top:1px solid rgba(216,178,92,.25);margin-top:4px;padding-top:6px;font-weight:600;color:#fff}
+.vapply{width:100%;background:var(--gold);border:0;color:#000;font-weight:600;padding:10px;font-size:12px;
+  letter-spacing:.6px;cursor:pointer;font-family:inherit;margin-top:10px}
+.vpnote{font-size:10px;color:var(--mut);line-height:1.6;margin-top:4px}
+.vpnote a{color:var(--gold)}
+.vpdet{margin-top:10px}
+.vpdet summary{font-size:11px;color:var(--mut);cursor:pointer;letter-spacing:.4px;user-select:none}
+.vprm{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:3px 0}
+.vprm label{font-size:11px;color:var(--mut)}
+.vprm input{background:none;border:none;border-bottom:1px solid var(--line);color:#fff;width:100px;
+  text-align:right;font-size:13px;font-family:inherit;font-variant-numeric:tabular-nums;padding:3px 0}
+.vprm input:focus{outline:none;border-bottom-color:var(--gold)}
+
 /* kesilen yazılar için tam-metin balonu (üzerine gelince / dokununca) */
 #tip{position:fixed;z-index:70;max-width:min(86vw,340px);background:#1c1f2a;color:#e7ecf5;
   font-size:12px;line-height:1.5;padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,.12);
