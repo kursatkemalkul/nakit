@@ -12,7 +12,6 @@ const GCOL={
   "Diğer Evler (Türkiye)":"#A07BC8",
   "Araç":"#5B9CC2",
   "Abonelikler":"#C79A5B",
-  "Vergiler":"#C77B5B",
   "Ekstralar":"#8FA85B"
 };
 function gColor(key,gi){return GCOL[key]||COL[gi%COL.length];}
@@ -26,7 +25,6 @@ const GROUPS=[
   {key:"Diğer Evler (Türkiye)", t:"gider"},
   {key:"Araç", t:"gider"},
   {key:"Abonelikler", t:"gider"},
-  {key:"Vergiler", t:"gider"},
   {key:"Ekstralar", t:"gider"}
 ];
 
@@ -79,8 +77,8 @@ const DEFAULTS={
   {id:"s11",t:"gider",g:"Abonelikler",n:"YouTube",cur:"T",a:234,months:"all"},
   {id:"s12",t:"gider",g:"Abonelikler",n:"Spotify x2",cur:"T",a:200,months:"all"},
   {id:"s13",t:"gider",g:"Abonelikler",n:"Amazon Prime",cur:"T",a:200,months:"all"},
-  // --- Vergiler (maaş/gelir vergisi) ---
-  {id:"y4",t:"gider",g:"Vergiler",n:"Eslemisko Gelir Vergisi (2 taksit)",cur:"T",a:145500,months:[5,7]}
+  // --- gelir vergisi (kullanıcı bunu Diğer Evler grubunda tutuyor) ---
+  {id:"y4",t:"gider",g:"Diğer Evler (Türkiye)",n:"Eslem — Gelir Vergisi (2 taksit)",cur:"T",a:145500,months:[5,7]}
  ]
 };
 
