@@ -207,6 +207,7 @@ function save(){
     S._mt=Date.now();
     try{localStorage.setItem("nakit2026",JSON.stringify(S));}catch(e){}
     cloudPush();
+    histRecord();
   },350);
 }
 
@@ -601,6 +602,7 @@ function cloudApply(r){
     rerender(); cloud.applying=false;
     cloudStatus("☁ eşitlendi",true);
     if(oldV<6)cloudPush();              // bulut eski sürümdeyse güncellenmiş hali geri yaz
+    histReset();                        // dıştan gelen veri geri-al geçmişini sıfırlar
   }catch(e){}
 }
 function startSync(){
@@ -645,8 +647,66 @@ function authInit(){
   });
 }
 
+/* ---- geri al / ileri al (undo/redo) ---- */
+let hist={undo:[],redo:[],prev:null,applying:false};
+function snapState(){const c=Object.assign({},S);delete c._mt;return JSON.stringify(c);}
+function updateUndoUI(){
+  const u=document.getElementById("undoBtn"),r=document.getElementById("redoBtn");
+  if(u)u.disabled=!hist.undo.length;
+  if(r)r.disabled=!hist.redo.length;
+}
+function histInit(){hist.prev=snapState();hist.undo=[];hist.redo=[];updateUndoUI();}
+function histReset(){hist.prev=snapState();hist.undo=[];hist.redo=[];updateUndoUI();}
+function histRecord(){
+  if(hist.applying)return;
+  const cur=snapState();
+  if(cur===hist.prev)return;
+  hist.undo.push(hist.prev);
+  if(hist.undo.length>80)hist.undo.shift();
+  hist.redo=[];
+  hist.prev=cur;
+  updateUndoUI();
+}
+function histApply(snapStr,msg){
+  hist.applying=true;
+  S=JSON.parse(snapStr); S._mt=Date.now(); hist.prev=snapStr;
+  try{localStorage.setItem("nakit2026",JSON.stringify(S));}catch(e){}
+  cloudPush(); rerender();
+  hist.applying=false; updateUndoUI(); toast(msg);
+}
+function undo(){
+  if(!hist.undo.length){toast("Geri alınacak bir şey yok");return;}
+  hist.redo.push(hist.prev);
+  histApply(hist.undo.pop(),"↩ Geri alındı");
+}
+function redo(){
+  if(!hist.redo.length){toast("İleri alınacak bir şey yok");return;}
+  hist.undo.push(hist.prev);
+  histApply(hist.redo.pop(),"↪ İleri alındı");
+}
+function mountUndoBar(){
+  const tb=document.querySelector(".topbar");
+  if(!tb||document.getElementById("undobar"))return;
+  const bar=document.createElement("div");
+  bar.id="undobar"; bar.className="undobar";
+  bar.innerHTML='<button id="undoBtn" class="ubtn" title="Geri al">↩</button><button id="redoBtn" class="ubtn" title="İleri al">↪</button>';
+  tb.appendChild(bar);
+  document.getElementById("undoBtn").onclick=undo;
+  document.getElementById("redoBtn").onclick=redo;
+  updateUndoUI();
+}
+document.addEventListener("keydown",e=>{
+  const t=e.target,inF=t&&(t.tagName==="INPUT"||t.tagName==="TEXTAREA"||t.isContentEditable);
+  if(inF)return;
+  const k=(e.key||"").toLowerCase();
+  if((e.ctrlKey||e.metaKey)&&!e.shiftKey&&k==="z"){e.preventDefault();undo();}
+  else if((e.ctrlKey||e.metaKey)&&(k==="y"||(e.shiftKey&&k==="z"))){e.preventDefault();redo();}
+});
+
 /* ---- başlat ---- */
 load();
 rerender();
+mountUndoBar();
+histInit();
 fetchKur();
 authInit();
