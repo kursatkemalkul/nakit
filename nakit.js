@@ -259,7 +259,8 @@ function renderCalendar(){
       <div class="mbar" style="background:${col}"></div>
       <div class="mname">${MN[idx]}</div>
       <div><div class="mkalan">${fE(r.k)}</div>
-      <div class="mbirik ${r.k>=0?"pos":"neg"}">bu ay ${r.k>=0?"+":"−"}${fE(Math.abs(r.k))}</div></div>
+      ${(()=>{const ger=(S.gercek||{})[m],hasGer=typeof ger==="number",gv=hasGer?ger:r.k;
+        return `<div class="mbirik ${gv>=0?"pos":"neg"}">${hasGer?"✓ ":"bu ay "}${gv>=0?"+":"−"}${fE(Math.abs(gv))}</div>`;})()}</div>
       <div class="chev">▶</div>
     </div>
     <div class="mbody">
@@ -292,6 +293,9 @@ function renderCalendar(){
     </div>
     <div class="kalanrow"><span class="l">KALAN</span><span class="v">${fE(r.k)}</span></div>
     <div class="tlrow"><span>≈ TL karşılığı</span><span>${fT(r.k*S.kur)}</span></div>
+    <div class="gerrow"><span class="l">BU AY BİRİKTİRDİĞİM (€)</span>
+      <input type="number" inputmode="decimal" class="gerin" data-ger="${m}"
+        value="${typeof (S.gercek||{})[m]==="number"?S.gercek[m]:""}" placeholder="örn. 5000 / -2000"></div>
     </div></div>`;
   });
   document.getElementById("months").innerHTML=html;
@@ -325,6 +329,24 @@ function bindCalendar(){
     inp.onchange=()=>{done=true; it.a=parseFloat(inp.value)||0; vergiAuto(it.id); save(); renderCalendar();
       toast(it.months==="all"?"Tüm aylara uygulandı ✓":"Kaydedildi ✓");};
     inp.onblur=()=>{if(!done)renderCalendar();};
+  });
+  /* "bu ay biriktirdiğim": artı tutar Mevcut Birikim'e eklenir; eksi tutar sadece
+     kırmızı gösterilir, birikimden DÜŞÜLMEZ. Düzeltme/silme eski eklemeyi geri alır. */
+  document.querySelectorAll(".gerin").forEach(inp=>inp.onchange=()=>{
+    const m=+inp.dataset.ger;
+    if(!S.gercek)S.gercek={};
+    const old=typeof S.gercek[m]==="number"?S.gercek[m]:0;
+    const raw=inp.value.trim();
+    if(raw===""){
+      if(m in S.gercek){S.birikim-=Math.max(0,old); delete S.gercek[m];
+        toast("Kayıt silindi"+(old>0?" — birikimden geri alındı":""));}
+    }else{
+      const val=parseFloat(raw)||0;
+      S.birikim+=Math.max(0,val)-Math.max(0,old); S.gercek[m]=val;
+      toast(val>0?"Birikime eklendi ✓ Mevcut birikim: "+fE(S.birikim)
+              :"Kaydedildi — eksi ay birikimden düşülmez");
+    }
+    save(); renderCalendar();
   });
   document.querySelectorAll("[data-addx]").forEach(b=>b.onclick=()=>{
     document.getElementById("xf"+b.dataset.addx).classList.toggle("show");

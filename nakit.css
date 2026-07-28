@@ -44,6 +44,13 @@ h1{font-size:17px;font-weight:600;letter-spacing:2.5px}
 .mkalan{font-size:22px;font-weight:300;font-variant-numeric:tabular-nums;color:#fff!important;letter-spacing:-.5px}
 .mbirik{font-size:10px;color:var(--mut);text-align:right;font-variant-numeric:tabular-nums;letter-spacing:.4px}
 .mbirik.pos{color:var(--in)} .mbirik.neg{color:var(--out)}
+.gerrow{display:flex;justify-content:space-between;align-items:center;gap:10px;
+  padding:10px 0 0;margin-top:10px;border-top:1px dashed rgba(255,255,255,.15)}
+.gerrow .l{font-size:10px;font-weight:600;letter-spacing:2px;color:var(--mut)}
+.gerin{background:none;border:none;border-bottom:1px solid var(--line);color:#fff;width:120px;
+  text-align:right;font-size:15px;font-family:inherit;font-variant-numeric:tabular-nums;padding:4px 0}
+.gerin:focus{outline:none;border-bottom-color:var(--in)}
+.gerin::placeholder{color:#4a4f5c;font-size:12px}
 .chev{display:none}
 .mbody{display:none;padding:0 0 20px}
 .mcard.open .mbody{display:block}
